@@ -1,2 +1,5 @@
 *.npy
 *.txt
+.vscode
+/sportimages
+data.py

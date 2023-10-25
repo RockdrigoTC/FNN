@@ -1,6 +1,7 @@
 # FNN(Feedforward Neural Network) implementation
 
 import numpy as np
+#import tensorflow as tf
 
 class FNN:
     def __init__(self, input_size, hidden_size, output_size):
@@ -16,10 +17,21 @@ class FNN:
     def forward(self, X):
         # Propagacion hacia adelante
         self.z = np.dot(X, self.W1)
-        self.z2 = self.sigmoid(self.z)
+        self.z2 = self.softmax(self.z)
         self.z3 = np.dot(self.z2, self.W2)
-        o = self.sigmoid(self.z3)
+        o = self.softmax(self.z3)
         return o
+
+    def softmax(self, X):
+        # Funcion de activacion softmax
+        exps = np.exp(X - np.max(X))
+        return exps / np.sum(exps)
+    
+    def softmax_derivative(self, X):
+        # Derivada de la funcion de activacion softmax
+        s = self.softmax(X)
+        return s * (1 - s)
+
     
     def sigmoid(self, s):
         # Funcion de activacion
@@ -32,11 +44,11 @@ class FNN:
     def backward(self, X, y, o):
         # Propagacion hacia atras
         self.o_error = y - o
-        self.o_delta = self.o_error * self.sigmoidPrime(o)
-        
+        self.o_delta = self.o_error * self.softmax_derivative(o)
+
         self.z2_error = self.o_delta.dot(self.W2.T)
-        self.z2_delta = self.z2_error * self.sigmoidPrime(self.z2)
-        
+        self.z2_delta = self.z2_error * self.softmax_derivative(self.z2)
+
         self.W1 += X.T.dot(self.z2_delta)
         self.W2 += self.z2.T.dot(self.o_delta)
         
@@ -55,57 +67,87 @@ class FNN:
     def predict(self, X):
         print("Resultado: \n" + str(np.round(self.forward(X))))
 
+    def loss(self, X, y):
+        o = self.forward(X)
+        return np.mean(np.square(y - o))
+    
+    def categorical_crossentropy(self, y_true, y_pred):
+        # Convierte y_true en formato one-hot
+        num_classes = y_pred.shape[1]
+        y_true_onehot = np.eye(num_classes)[y_true]
+
+        # Calcula la Entropía Cruzada Categórica
+        epsilon = 1e-15
+        loss = -np.sum(y_true_onehot * np.log(y_pred + epsilon)) / len(y_true)
+
+        return loss
+    
+def one_shot_encode(labels, num_classes):
+    # Crea una matriz de ceros con la forma (len(labels), num_classes)
+    encoded_labels = np.zeros((len(labels), num_classes))
+    
+    # Establece el valor correspondiente a 1 en la columna de la clase adecuada
+    for i in range(len(labels)):
+        encoded_labels[i, labels[i]] = 1
+    
+    return encoded_labels
+
 
 if __name__ == "__main__":
 
-    # Carga los datos
-    train_data = np.load('train_X.npy')
-    train_label = np.load('train_label.npy')
-    valid_data = np.load('valid_X.npy')
-    valid_label = np.load('valid_label.npy')
-    test_data = np.load('test_X.npy')
-    test_label = np.load('test_Y.npy')
+    # # Descarga el conjunto de datos MNIST
+    # mnist = tf.keras.datasets.mnist
 
-    # train_data.shape = (num_examples, 21, 28, 3)
-    # train_label.shape = (num_examples, 10)
-    # valid_data.shape = (num_examples, 21, 28, 3)
-    # valid_label.shape = (num_examples, 10)
+    # # Carga el conjunto de datos en dos conjuntos: entrenamiento y prueba
+    # (train_images, train_labels), (test_images, test_labels) = mnist.load_data()
+
+    # # Normaliza las imágenes para que los valores estén en el rango [0, 1]
+    # train_images, test_images = train_images / 255.0, test_images / 255.0
+
+    # # Guarda los datos de entrenamiento y prueba en archivos numpy
+    # np.save("train_images.npy", train_images)
+    # np.save("train_labels.npy", train_labels)
+    # np.save("test_images.npy", test_images)
+    # np.save("test_labels.npy", test_labels)
+
+    # Carga los datos de entrenamiento y prueba desde los archivos numpy
+    train_images = np.load("train_images.npy")
+    train_labels = np.load("train_labels.npy")
+    test_images = np.load("test_images.npy")
+    test_labels = np.load("test_labels.npy")
+
+    # Aplana las imágenes
+    train_images = train_images.reshape(train_images.shape[0], -1)
+    test_images = test_images.reshape(test_images.shape[0], -1)
+
+    # Codifica las etiquetas en formato one-hot
+    train_labels_one_shot = one_shot_encode(train_labels, 10)
+
+    # Crea el modelo
+    model = FNN(784, 15, 10)
+
+    epoch = 1000
+
+    # Entrena el modelo con los datos de entrenamiento aplanados.
+    for i in range(epoch):
+        print("Epoch: " + str(i))
+        model.train(train_images, train_labels_one_shot)
+        print("Loss: " + str(model.categorical_crossentropy(train_labels, model.forward(train_images))))
+
+    # Guarda los pesos del modelo
+    model.saveWeights()
+
+    # Carga los pesos del modelo
+    model.loadWeights()
+
+    # Codifica las etiquetas de prueba en formato one-hot
+    test_labels = one_hot_encode(test_labels, 10)
+
+    # Evalua el modelo con los datos de prueba aplanados.
+    print("Loss: " + str(model.loss(test_images, test_labels)))
+
+    # Predice la clase de una imagen
+    model.predict(test_images[0].reshape(1, -1))
+    print("Clase real: " + str(test_labels[0]))
 
 
-
-    # Definir hiperparametros
-    input_size = train_data.shape[1] * train_data.shape[2] * train_data.shape[3]
-    hidden_size = 100
-    output_size = train_label.shape[1]
-    learning_rate = 0.1
-    epochs = 1000
-
-    train_data = train_data.reshape(train_data.shape[0], -1)
-    valid_data = valid_data.reshape(valid_data.shape[0], -1)
-    test_data = test_data.reshape(test_data.shape[0], -1)
-
-
-    # Crear red neuronal
-    nn = FNN(input_size, hidden_size, output_size)
-
-    # Entrenar red neuronal
-    for i in range(epochs):
-        print("Epoch: " + str(i+1))
-        if i % 100 == 0:
-            print("Loss: \n" + str(np.mean(np.square(valid_label - nn.forward(valid_data)))))
-        nn.train(train_data, train_label)
-
-    # Guardar pesos
-    nn.saveWeights()
-
-    # Cargar pesos
-    nn.loadWeights()
-
-    # Predecir
-    nn.predict(test_data[5])
-    nn.predict(test_data[8])
-
-    print("Test data: \n" + str(test_label[5]))
-    print("Test data: \n" + str(test_label[8]))
-
-    
