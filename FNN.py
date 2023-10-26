@@ -32,7 +32,6 @@ class FNN:
         s = self.softmax(X)
         return s * (1 - s)
 
-    
     def sigmoid(self, s):
         # Funcion de activacion
         return 1 / (1 + np.exp(-s))
@@ -41,20 +40,20 @@ class FNN:
         # Derivada de la funcion de activacion
         return s * (1 - s)
     
-    def backward(self, X, y, o):
+    def backward(self, X, y, o, learning_rate=0.1):
         # Propagacion hacia atras
         self.o_error = y - o
         self.o_delta = self.o_error * self.softmax_derivative(o)
-
+        
         self.z2_error = self.o_delta.dot(self.W2.T)
         self.z2_delta = self.z2_error * self.softmax_derivative(self.z2)
-
-        self.W1 += X.T.dot(self.z2_delta)
-        self.W2 += self.z2.T.dot(self.o_delta)
         
-    def train(self, X, y):
+        self.W1 += X.T.dot(self.z2_delta) * learning_rate
+        self.W2 += self.z2.T.dot(self.o_delta) * learning_rate
+        
+    def train(self, X, y, learning_rate=0.1):
         o = self.forward(X)
-        self.backward(X, y, o)
+        self.backward(X, y, o, learning_rate)
         
     def saveWeights(self):
         np.savetxt("w1.txt", self.W1, fmt="%s")
@@ -124,14 +123,14 @@ if __name__ == "__main__":
     train_labels_one_shot = one_shot_encode(train_labels, 10)
 
     # Crea el modelo
-    model = FNN(784, 15, 10)
+    model = FNN(784, 100, 10)
 
-    epoch = 1000
+    epoch = 50
 
     # Entrena el modelo con los datos de entrenamiento aplanados.
     for i in range(epoch):
         print("Epoch: " + str(i))
-        model.train(train_images, train_labels_one_shot)
+        model.train(train_images, train_labels_one_shot, learning_rate=0.9)
         print("Loss: " + str(model.categorical_crossentropy(train_labels, model.forward(train_images))))
 
     # Guarda los pesos del modelo
@@ -141,7 +140,7 @@ if __name__ == "__main__":
     model.loadWeights()
 
     # Codifica las etiquetas de prueba en formato one-hot
-    test_labels = one_hot_encode(test_labels, 10)
+    test_labels = one_shot_encode(test_labels, 10)
 
     # Evalua el modelo con los datos de prueba aplanados.
     print("Loss: " + str(model.loss(test_images, test_labels)))
