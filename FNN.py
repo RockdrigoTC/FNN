@@ -4,7 +4,7 @@ import numpy as np
 
 
 class FNN:
-    def __init__(self, input_size, hidden_size, output_size, weigth_init="ramdom"):
+    def __init__(self, input_size, hidden_size, output_size, weigth_init="random"):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.output_size = output_size
@@ -15,7 +15,7 @@ class FNN:
         elif weigth_init == 'glorot':
             # Inicialización de pesos con Glorot
             scale = np.sqrt(2.0 / (input_size + output_size))
-        elif weigth_init == 'he':
+        elif weigth_init == 'random':
             scale = 1.0
         else:
             raise ValueError("Tipo de inicializacion no reconocida.")
@@ -58,7 +58,7 @@ class FNN:
         self.W1 -= learning_rate * self.grad_W1
         self.b1 -= learning_rate * self.grad_b1
 
-    def train(self, X, y, epochs=1000, learning_rate=0.01):
+    def train(self, X, y, epochs=10, learning_rate=0.01):
         for i in range(epochs):
             print("Epoch #", i)
             y_pred = self.forward(X)
@@ -112,12 +112,15 @@ num_classes = 10
 y_train_one_hot = np.eye(num_classes)[y_train]
     
 
-# Crear y entrenar el modelo
+
 input_size = X_train.shape[1]
 hidden_size = 100
+epoch = 100
 output_size = num_classes
-model = FNN(input_size, hidden_size, output_size, initialization='he')
-model.train(X_train, y_train_one_hot, epochs=500, learning_rate=0.1)
+
+# Crear y entrenar el modelo
+model = FNN(input_size, hidden_size, output_size, weigth_init='random')
+model.train(X_train, y_train_one_hot, epochs=epoch, learning_rate=0.9)
 
 model.saveWeightsBiases()
 
