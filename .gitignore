@@ -1,4 +1,6 @@
 *.npy
 *.txt
+*.csv
 .vscode
 __pycache__
+Eigen

@@ -18,17 +18,17 @@ output_size = num_classes
 
 # Crear y entrenar el modelo
 model = FNN(input_size, hidden_size, output_size, weigth_init='random')
-# model.train(X_train, y_train_one_hot, epochs=epoch, learning_rate=0.9)
-# model.saveWeightsBiases()
+model.train(X_train, y_train_one_hot, epochs=epoch, learning_rate=0.9)
+model.saveWeightsBiases()
 
-# # Evaluar el modelo
-# y_test_one_hot = np.eye(num_classes)[y_test]
-# accuracy = model.evaluate(X_test, y_test_one_hot)
-# print("Accuracy:", accuracy)
+# Evaluar el modelo
+y_test_one_hot = np.eye(num_classes)[y_test]
+accuracy = model.evaluate(X_test, y_test_one_hot)
+print("Accuracy:", accuracy)
 
 model.loadWeights()
 
-# Predict
+# Predecir
 for i in range(50, 100):
     predict = model.predict(X_test[i].reshape(1, -1))
     predicted_class = np.argmax(predict)
