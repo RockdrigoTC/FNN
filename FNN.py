@@ -70,7 +70,7 @@ class FNN:
         return accuracy
 
     def predict(self, X):
-      print("Resultado: \n" + str(np.round(self.forward(X))))
+      return np.round(self.forward(X))
 
     def saveWeightsBiases(self):
         np.savetxt("w1.txt", self.W1, fmt="%s")
