@@ -1,152 +1,135 @@
 # FNN(Feedforward Neural Network) implementation
 
 import numpy as np
-#import tensorflow as tf
+
 
 class FNN:
-    def __init__(self, input_size, hidden_size, output_size):
-        # Definir hiperpametros
+    def __init__(self, input_size, hidden_size, output_size, weigth_init="ramdom"):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.output_size = output_size
-        
+
+        if weigth_init == 'he':
+            # Inicialización de pesos con He
+            scale = np.sqrt(2.0 / input_size)
+        elif weigth_init == 'glorot':
+            # Inicialización de pesos con Glorot
+            scale = np.sqrt(2.0 / (input_size + output_size))
+        elif weigth_init == 'he':
+            scale = 1.0
+        else:
+            raise ValueError("Tipo de inicializacion no reconocida.")
+            
         # Inicializar pesos
-        self.W1 = np.random.randn(self.input_size, self.hidden_size)
-        self.W2 = np.random.randn(self.hidden_size, self.output_size)
+        self.W1 = np.random.randn(self.input_size, self.hidden_size) * scale
+        self.b1 = np.zeros((1, self.hidden_size))
+        self.W2 = np.random.randn(self.hidden_size, self.output_size) * scale
+        self.b2 = np.zeros((1, self.output_size))
         
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
+    def softmax(self, x):
+        exps = np.exp(x - np.max(x))
+        return exps / np.sum(exps, axis=1, keepdims=True)
+
     def forward(self, X):
-        # Propagacion hacia adelante
-        self.z = np.dot(X, self.W1)
-        self.z2 = self.softmax(self.z)
-        self.z3 = np.dot(self.z2, self.W2)
-        o = self.softmax(self.z3)
-        return o
+        self.z1 = np.dot(X, self.W1) + self.b1
+        self.a1 = self.sigmoid(self.z1)
+        self.z2 = np.dot(self.a1, self.W2) + self.b2
+        self.a2 = self.softmax(self.z2)
+        return self.a2
 
-    def softmax(self, X):
-        # Funcion de activacion softmax
-        exps = np.exp(X - np.max(X))
-        return exps / np.sum(exps)
-    
-    def softmax_derivative(self, X):
-        # Derivada de la funcion de activacion softmax
-        s = self.softmax(X)
-        return s * (1 - s)
+    def backward(self, X, y, learning_rate=0.01):
+        m = X.shape[0]
 
-    def sigmoid(self, s):
-        # Funcion de activacion
-        return 1 / (1 + np.exp(-s))
-    
-    def sigmoidPrime(self, s):
-        # Derivada de la funcion de activacion
-        return s * (1 - s)
-    
-    def backward(self, X, y, o, learning_rate=0.1):
-        # Propagacion hacia atras
-        self.o_error = y - o
-        self.o_delta = self.o_error * self.softmax_derivative(o)
-        
-        self.z2_error = self.o_delta.dot(self.W2.T)
-        self.z2_delta = self.z2_error * self.softmax_derivative(self.z2)
-        
-        self.W1 += X.T.dot(self.z2_delta) * learning_rate
-        self.W2 += self.z2.T.dot(self.o_delta) * learning_rate
-        
-    def train(self, X, y, learning_rate=0.1):
-        o = self.forward(X)
-        self.backward(X, y, o, learning_rate)
-        
-    def saveWeights(self):
+        self.error = self.a2 - y
+
+        self.grad_W2 = np.dot(self.a1.T, self.error) / m
+        self.grad_b2 = np.sum(self.error, axis=0) / m
+
+        self.error2 = np.dot(self.error, self.W2.T) * (self.a1 * (1 - self.a1))
+
+        self.grad_W1 = np.dot(X.T, self.error2) / m
+        self.grad_b1 = np.sum(self.error2, axis=0) / m
+
+        self.W2 -= learning_rate * self.grad_W2
+        self.b2 -= learning_rate * self.grad_b2
+        self.W1 -= learning_rate * self.grad_W1
+        self.b1 -= learning_rate * self.grad_b1
+
+    def train(self, X, y, epochs=1000, learning_rate=0.01):
+        for i in range(epochs):
+            print("Epoch #", i)
+            y_pred = self.forward(X)
+            self.backward(X, y, learning_rate)
+            print(f"Loss: {self.loss_cross_entropy(y, y_pred)}")
+
+    def evaluate(self, X, y):
+        y_pred = self.forward(X)
+        accuracy = np.mean(np.argmax(y_pred, axis=1) == np.argmax(y, axis=1))
+        return accuracy
+
+    def predict(self, X):
+      print("Resultado: \n" + str(np.round(self.forward(X))))
+
+    def saveWeightsBiases(self):
         np.savetxt("w1.txt", self.W1, fmt="%s")
         np.savetxt("w2.txt", self.W2, fmt="%s")
+        np.savetxt("b1.txt", self.b1, fmt="%s")
+        np.savetxt("b2.txt", self.b2, fmt="%s")
+
 
     def loadWeights(self):
         self.W1 = np.loadtxt("w1.txt", dtype=float)
         self.W2 = np.loadtxt("w2.txt", dtype=float)
-        
-    def predict(self, X):
-        print("Resultado: \n" + str(np.round(self.forward(X))))
-
-    def loss(self, X, y):
-        o = self.forward(X)
-        return np.mean(np.square(y - o))
+        self.b1 = np.loadtxt("b1.txt", dtype=float)
+        self.b2 = np.loadtxt("b2.txt", dtype=float)
     
-    def categorical_crossentropy(self, y_true, y_pred):
-        # Convierte y_true en formato one-hot
-        num_classes = y_pred.shape[1]
-        y_true_onehot = np.eye(num_classes)[y_true]
-
-        # Calcula la Entropía Cruzada Categórica
-        epsilon = 1e-15
-        loss = -np.sum(y_true_onehot * np.log(y_pred + epsilon)) / len(y_true)
-
-        return loss
+    # Funcion de perdida(cross-entropy)
+    def loss_cross_entropy(self, y, y_pred):
+        return -np.mean(y * np.log(y_pred + 1e-10))
     
-def one_shot_encode(labels, num_classes):
-    # Crea una matriz de ceros con la forma (len(labels), num_classes)
-    encoded_labels = np.zeros((len(labels), num_classes))
+    # Funcion de perdida(mse)
+    def loss_mse(self, y, y_pred):
+        return np.mean(np.square(y - y_pred))
     
-    # Establece el valor correspondiente a 1 en la columna de la clase adecuada
-    for i in range(len(labels)):
-        encoded_labels[i, labels[i]] = 1
+    def loss(self, y, y_pred):
+        return self.loss_cross_entropy(y, y_pred)
     
-    return encoded_labels
+    def loss_categorical_crossentropy(self, y_true, y_pred):
+        return -np.mean(y_true * np.log(y_pred + 1e-10))
+    
 
+# Cargar los datos desde los archivos numpy
+X_train = np.load("X_train.npy")
+X_test = np.load("X_test.npy")
+y_train = np.load("y_train.npy")
+y_test = np.load("y_test.npy")
 
-if __name__ == "__main__":
+# Codificar las etiquetas en formato one-hot
+num_classes = 10
+y_train_one_hot = np.eye(num_classes)[y_train]
+    
 
-    # # Descarga el conjunto de datos MNIST
-    # mnist = tf.keras.datasets.mnist
+# Crear y entrenar el modelo
+input_size = X_train.shape[1]
+hidden_size = 100
+output_size = num_classes
+model = FNN(input_size, hidden_size, output_size, initialization='he')
+model.train(X_train, y_train_one_hot, epochs=500, learning_rate=0.1)
 
-    # # Carga el conjunto de datos en dos conjuntos: entrenamiento y prueba
-    # (train_images, train_labels), (test_images, test_labels) = mnist.load_data()
+model.saveWeightsBiases()
 
-    # # Normaliza las imágenes para que los valores estén en el rango [0, 1]
-    # train_images, test_images = train_images / 255.0, test_images / 255.0
+# Evaluar el modelo
+y_test_one_hot = np.eye(num_classes)[y_test]
+accuracy = model.evaluate(X_test, y_test_one_hot)
+print("Accuracy:", accuracy)
 
-    # # Guarda los datos de entrenamiento y prueba en archivos numpy
-    # np.save("train_images.npy", train_images)
-    # np.save("train_labels.npy", train_labels)
-    # np.save("test_images.npy", test_images)
-    # np.save("test_labels.npy", test_labels)
+model.loadWeights()
 
-    # Carga los datos de entrenamiento y prueba desde los archivos numpy
-    train_images = np.load("train_images.npy")
-    train_labels = np.load("train_labels.npy")
-    test_images = np.load("test_images.npy")
-    test_labels = np.load("test_labels.npy")
-
-    # Aplana las imágenes
-    train_images = train_images.reshape(train_images.shape[0], -1)
-    test_images = test_images.reshape(test_images.shape[0], -1)
-
-    # Codifica las etiquetas en formato one-hot
-    train_labels_one_shot = one_shot_encode(train_labels, 10)
-
-    # Crea el modelo
-    model = FNN(784, 100, 10)
-
-    epoch = 50
-
-    # Entrena el modelo con los datos de entrenamiento aplanados.
-    for i in range(epoch):
-        print("Epoch: " + str(i))
-        model.train(train_images, train_labels_one_shot, learning_rate=0.9)
-        print("Loss: " + str(model.categorical_crossentropy(train_labels, model.forward(train_images))))
-
-    # Guarda los pesos del modelo
-    model.saveWeights()
-
-    # Carga los pesos del modelo
-    model.loadWeights()
-
-    # Codifica las etiquetas de prueba en formato one-hot
-    test_labels = one_shot_encode(test_labels, 10)
-
-    # Evalua el modelo con los datos de prueba aplanados.
-    print("Loss: " + str(model.loss(test_images, test_labels)))
-
-    # Predice la clase de una imagen
-    model.predict(test_images[0].reshape(1, -1))
-    print("Clase real: " + str(test_labels[0]))
-
-
+# Predict
+for i in range(0, 10):
+  model.predict(X_test[i].reshape(1, -1))
+  print("Clase real: " + str(y_test[i]))
+  print("-----------")
