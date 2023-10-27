@@ -3,7 +3,7 @@
 #include <vector>
 #include <Eigen/Dense>
 
-/* class FNN {
+class FNN {
 public:
     FNN(int input_size, int hidden_size, int output_size, std::string weight_init = "random") :
         input_size(input_size), hidden_size(hidden_size), output_size(output_size) {
@@ -192,9 +192,9 @@ Eigen::MatrixXd oneHotEncode(const Eigen::VectorXi& labels, int num_classes) {
     }
 
     return one_hot_matrix;
-} */
+}
 
-Eigen::MatrixXd loadMatrixFromCSV(const std::string& filename) {
+Eigen::MatrixXd loadMatrixFromCSV(const std::string& filename, int skipRows) {
     // Abrir el archivo CSV
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -205,7 +205,14 @@ Eigen::MatrixXd loadMatrixFromCSV(const std::string& filename) {
     // Leer el archivo CSV línea por línea
     std::vector<std::vector<double>> data;
     std::string line;
+    int lineCounter = 0;
     while (std::getline(file, line)) {
+        // Omitir las primeras skipRows líneas
+        if (lineCounter < skipRows) {
+            lineCounter++;
+            continue;
+        }
+
         std::istringstream ss(line);
         std::vector<double> row;
         double value;
@@ -233,12 +240,13 @@ Eigen::MatrixXd loadMatrixFromCSV(const std::string& filename) {
     return matrix;
 }
 
+
 int main() {
     // Cargar datos desde archivos CSV
-    Eigen::MatrixXd X_train = loadMatrixFromCSV("X_train.csv");
-    Eigen::MatrixXd X_test = loadMatrixFromCSV("X_test.csv");
-    Eigen::MatrixXd y_train = loadMatrixFromCSV("y_train.csv").cast<int>();
-    Eigen::MatrixXd y_test = loadMatrixFromCSV("y_test.csv").cast<int>();
+    Eigen::MatrixXd X_train = loadMatrixFromCSV("X_train.csv", 0);
+    Eigen::MatrixXd X_test = loadMatrixFromCSV("X_test.csv", 0);
+    Eigen::MatrixXd y_train = loadMatrixFromCSV("y_train.csv", 0);
+    Eigen::MatrixXd y_test = loadMatrixFromCSV("y_test.csv", 0);
 
 
     // Imprimir dimensiones de los datos
@@ -248,25 +256,43 @@ int main() {
     std::cout << "Dimensiones de y_test: " << y_test.rows() << " x " << y_test.cols() << std::endl;
 
 
+    using XTrainType = decltype(X_train);
+    using XTestType = decltype(X_test);
+    using YTrainType = decltype(y_train);
+    using YTestType = decltype(y_test);
+
+    using XTrainScalar = typename XTrainType::Scalar;
+    using XTestScalar = typename XTestType::Scalar;
+    using YTrainScalar = typename YTrainType::Scalar;
+    using YTestScalar = typename YTestType::Scalar;
+
+    std::cout << "Tipo de dato de X_train: " << typeid(XTrainScalar).name() << std::endl;
+    std::cout << "Tipo de dato de X_test: " << typeid(XTestScalar).name() << std::endl;
+    std::cout << "Tipo de dato de y_train: " << typeid(YTrainScalar).name() << std::endl;
+    std::cout << "Tipo de dato de y_test: " << typeid(YTestScalar).name() << std::endl;
+
+
+
+
     /* // Codificar las etiquetas en formato one-hot
     int num_classes = 10;
     Eigen::MatrixXd y_train_one_hot = oneHotEncode(y_train, num_classes);
-    Eigen::MatrixXd y_test_one_hot = oneHotEncode(y_test, num_classes);
+    Eigen::MatrixXd y_test_one_hot = oneHotEncode(y_test, num_classes); */
 
-    int input_size = X_train.cols();
+    /* int input_size = X_train.cols();
     int hidden_size = 100;
     int epochs = 100;
     int output_size = num_classes;
 
     // Crear y entrenar el modelo
-    FNN model(input_size, hidden_size, output_size, "random");
-    model.train(X_train, y_train_one_hot, epochs);
+    FNN model(input_size, hidden_size, output_size, "random"); */
+    /* model.train(X_train, y_train_one_hot, epochs); */
 
-    // Evaluar el modelo
+    /* // Evaluar el modelo
     double accuracy = model.evaluate(X_test, y_test_one_hot);
-    std::cout << "Accuracy: " << accuracy << std::endl;
+    std::cout << "Accuracy: " << accuracy << std::endl; */
     
-    // Realizar predicciones
+    /* // Realizar predicciones
     for (int i = 50; i < 100; i++) {
         Eigen::MatrixXd predict = model.predict(X_test.row(i));
         int predicted_class = model.argmax(predict.row(0));
