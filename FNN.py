@@ -1,4 +1,5 @@
 # FNN(Feedforward Neural Network) implementation
+# Author: Rodrigo Torrealba
 
 import numpy as np
 
@@ -78,7 +79,6 @@ class FNN:
         np.savetxt("b1.txt", self.b1, fmt="%s")
         np.savetxt("b2.txt", self.b2, fmt="%s")
 
-
     def loadWeights(self):
         self.W1 = np.loadtxt("w1.txt", dtype=float)
         self.W2 = np.loadtxt("w2.txt", dtype=float)
@@ -93,10 +93,5 @@ class FNN:
     def loss_mse(self, y, y_pred):
         return np.mean(np.square(y - y_pred))
     
-    def loss(self, y, y_pred):
-        return self.loss_cross_entropy(y, y_pred)
-    
-    def loss_categorical_crossentropy(self, y_true, y_pred):
-        return -np.mean(y_true * np.log(y_pred + 1e-10))
     
 

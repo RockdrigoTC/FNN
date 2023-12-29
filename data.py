@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from sklearn.datasets import fetch_openml
 
 # Cargar dataset MNIST
@@ -25,13 +24,3 @@ np.save("X_test.npy", X_test)
 np.save("y_train.npy", y_train)
 np.save("y_test.npy", y_test)
 
-
-""" # Transponer las matrices de imágenes
-X_train = X_train.T
-X_test = X_test.T """
-
-# Guardar los datos en archivos CSV
-np.savetxt("X_train.csv", X_train, delimiter=',', fmt='%f')
-np.savetxt("X_test.csv", X_test, delimiter=',', fmt='%f')
-np.savetxt("y_train.csv", y_train, delimiter=',', fmt='%d')
-np.savetxt("y_test.csv", y_test, delimiter=',', fmt='%d')
