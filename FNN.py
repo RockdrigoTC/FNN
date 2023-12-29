@@ -79,7 +79,7 @@ class FNN:
         np.savetxt("b1.txt", self.b1, fmt="%s")
         np.savetxt("b2.txt", self.b2, fmt="%s")
 
-    def loadWeights(self):
+    def loadWeightsBiases(self):
         self.W1 = np.loadtxt("w1.txt", dtype=float)
         self.W2 = np.loadtxt("w2.txt", dtype=float)
         self.b1 = np.loadtxt("b1.txt", dtype=float)
