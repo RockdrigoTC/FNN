@@ -1,5 +1,6 @@
 import numpy as np
-from FNN import FNN
+import matplotlib.pyplot as plt
+from FNN import Layer, FNN
 
 # Load data from numpy files
 X_train = np.load("X_train.npy")
@@ -14,23 +15,42 @@ y_test_one_hot = np.eye(num_classes)[y_test]
     
 input_size = X_train.shape[1]
 hidden_size = 100
-epoch = 100
+epoch = 50
 output_size = num_classes
 
-# Create and train the model
-model = FNN(input_size, hidden_size, output_size, weigth_init='he') # weigth_init=('he' or 'glorot' or 'random)
-model.train(X_train, y_train_one_hot, X_test, y_test_one_hot , epochs=epoch, learning_rate=0.9)
-model.saveWeightsBiases()
+# Crear capas
+input_layer = Layer(input_size, hidden_size, activation_function='sigmoid', weight_init='he')
+hidden_layer = Layer(hidden_size, output_size, activation_function='softmax', weight_init='he')
 
-# Load saved weights and biases
-model.loadWeightsBiases()
+# Create and train the model
+model = FNN(layers=[input_layer, hidden_layer])
+model.train(X_train, y_train_one_hot, X_test, y_test_one_hot , epochs=epoch, learning_rate=0.3)
+
+# Save the model
+model.save_model("model.pkl")
+
+# Load the model
+model.load_model("model.pkl")
 
 # Predictions
 sample_indices = np.random.choice(len(X_test), size=10, replace=False)
 for i in sample_indices:
     predict = model.predict(X_test[i].reshape(1, -1))
-    predicted_class = np.argmax(predict)
     real_class = y_test[i]
-    print(f"Predicted class: {predicted_class} ({predict.astype(int)})")
+    print(f"Predicted class: {predict.astype(int)}")
     print(f"Real class: {real_class}")
     print("-----------")
+
+# Plot loss and accuracy
+'''
+plt.figure(figsize=(12, 4))
+plt.subplot(121)
+plt.plot(model.history['loss'])
+plt.title("Loss")
+plt.subplot(122)
+plt.plot(model.history['accuracyTrain'], label='train')
+plt.plot(model.history['accuracyTest'], label='test')
+plt.title("Accuracy")
+plt.legend()
+plt.show()
+'''
