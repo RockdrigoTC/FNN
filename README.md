@@ -48,3 +48,8 @@ In this module, the FNN is trained using the MNIST dataset. The training data is
 
    ```bash
    python data.py
+
+(Optional) Install matplotlib to display training statistics plots
+
+   ```bash
+   pip install matplotlib
