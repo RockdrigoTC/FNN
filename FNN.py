@@ -12,17 +12,17 @@ class Layer:
         self.activation_function = activation_function
 
         if weight_init == 'he':
-            scale = np.sqrt(2.0 / input_size)
+            scale = np.sqrt(2.0 / self.input_size)
         elif weight_init == 'glorot':
-            scale = np.sqrt(2.0 / (input_size + output_size))
+            scale = np.sqrt(2.0 / (self.input_size + self.output_size))
         elif weight_init == 'random':
             scale = 1.0
         else:
             raise ValueError(f"Unknown weight_init: {weight_init}")
 
         # Weights and biases initialization
-        self.weights = np.random.randn(input_size, output_size) * scale
-        self.biases = np.zeros((1, output_size))
+        self.weights = np.random.randn(self.input_size, self.output_size) * scale
+        self.biases = np.zeros((1, self.output_size))
 
     def activate(self, x):
         if self.activation_function == 'sigmoid':
@@ -92,7 +92,16 @@ class FNN:
             next_layer = layer
 
     # Training
-    def train(self, X, y, x_test=None, y_test=None, epochs=10, learning_rate=0.01):
+    def train(self, X=None, y=None, x_test=None, y_test=None, epochs=10, learning_rate=0.01):
+        if X is None or y is None:
+            raise ValueError("X or y is None")
+        if X.shape[0] != y.shape[0]:
+            raise ValueError(f"Number of samples in X and y don't match: {X.shape[0]} != {y.shape[0]}")
+        if X.shape[1] != self.layers[0].input_size:
+            raise ValueError(f"Input size of the first layer doesn't match: {X.shape[1]} != {self.layers[0].input_size}")
+        if y.shape[1] != self.layers[-1].output_size:
+            raise ValueError(f"Output size of the last layer doesn't match: {y.shape[1]} != {self.layers[-1].output_size}")
+        
         for i in range(epochs):
             print("Epoch #", i)
             y_pred = self.forward(X)
