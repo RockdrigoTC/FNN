@@ -1,12 +1,9 @@
-# FNN(Feedforward Neural Network) implementation
-# Author: Rodrigo Torrealba
-
 import numpy as np
 import pickle
 
 # Layer class definition
 class Layer:
-    def __init__(self, input_size, output_size, activation_function='sigmoid', weight_init='random'):
+    def __init__(self, input_size=None, output_size=None, activation_function='sigmoid', weight_init='random'):
         self.input_size = input_size
         self.output_size = output_size
         self.activation_function = activation_function
@@ -47,7 +44,6 @@ class FNN:
             z = np.dot(activations, layer.weights) + layer.biases
             activations = layer.activate(z)
         return activations
-
 
     # Backward propagation
     def backward(self, X, y, learning_rate=0.01):
@@ -104,31 +100,31 @@ class FNN:
         
         for i in range(epochs):
             print("Epoch #", i)
-            y_pred = self.forward(X)
+            # Forward and backward propagation
+            y_hat = self.forward(X)
             self.backward(X, y, learning_rate)
-            accuracy_train = self.evaluate(X, y)
-            loss = self.loss_cross_entropy(y, y_pred)
-            if x_test is not None or y_test is not None:
-                accuracy_test = self.evaluate(x_test, y_test)
-                print(f"Loss: {loss}  Accuracy Train: {accuracy_train} Accuracy Test: {accuracy_test}")
-                self.history['accuracyTest'].append(accuracy_test)
-            else:
-                print(f"Loss: {loss}  Accuracy Train: {accuracy_train}")
+
+            # Compute loss and accuracy
+            self.evaluate(X, y, x_test, y_test, y_hat)
             
-            self.history['loss'].append(loss)
-            self.history['accuracyTrain'].append(accuracy_train)
-
-
     # Evaluation
-    def evaluate(self, X, y):
-        # Accuracy calculation: (Number of correct predictions) / (Total number of predictions)
-        y_pred = self.forward(X)
-        accuracy = np.mean(np.argmax(y_pred, axis=1) == np.argmax(y, axis=1))
-        return accuracy
+    def evaluate(self, X, y, x_test, y_test, y_hat):
+        loss = self.loss_cross_entropy(y, y_hat)
+        accuracy_train = self.accuracy(y, y_hat)
+        if x_test is not None or y_test is not None:
+            y_hat_test = self.forward(x_test)
+            accuracy_test = self.accuracy(y_test, y_hat_test)
+            print(f"Loss: {loss}  Accuracy Train: {accuracy_train} Accuracy Test: {accuracy_test}")
+            self.history['accuracyTest'].append(accuracy_test)
+        else:
+            print(f"Loss: {loss}  Accuracy Train: {accuracy_train}")
+        self.history['loss'].append(loss)
+        self.history['accuracyTrain'].append(accuracy_train)
 
     # Prediction
     def predict(self, X):
-      return np.argmax(self.forward(X), axis=1)
+        # Return the index of the highest probability
+        return np.argmax(self.forward(X), axis=1)
 
     # Loss function(cross entropy)
     def loss_cross_entropy(self, y, y_pred):
@@ -139,6 +135,10 @@ class FNN:
     def loss_mse(self, y, y_pred):
         # Mean squared error loss function formula: 1/N * sum((y - y_pred)^2)
         return np.mean(np.square(y - y_pred))
+    
+    def accuracy(self, y, y_pred):
+        # Accuracy calculation: (Number of correct predictions) / (Total number of predictions)
+        return np.mean(np.argmax(y_pred, axis=1) == np.argmax(y, axis=1))
     
     # Save the model to a file
     def save_model(self, filename):
