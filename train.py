@@ -16,15 +16,16 @@ y_test_one_hot = np.eye(num_classes)[y_test]
 input = X_train.shape[1] # Size of input layer
 hidden_size = 100        # Size of hidden layer
 epoch = 100              # Number of epochs
+learning_rate = 0.1      # Learning rate
 output = num_classes     # Size of output layer
 
 # Crear capas
-input_layer = Layer(input_size=input, output_size=hidden_size, activation_function='sigmoid', weight_init='he')
+input_layer = Layer(input_size=input, output_size=hidden_size, activation_function='sigmoid', weight_init='he') # weight_init='he', 'glorot' or 'random'
 hidden_layer = Layer(input_size=hidden_size, output_size=output, activation_function='softmax', weight_init='he')  
 
 # Create and train the model
 model = FNN(layers=[input_layer, hidden_layer])
-model.train(X=X_train, y=y_train_one_hot, x_test=X_test, y_test=y_test_one_hot , epochs=epoch, learning_rate=0.5)
+model.train(X=X_train, y=y_train_one_hot, x_test=X_test, y_test=y_test_one_hot , epochs=epoch, learning_rate=learning_rate)
 
 # Save the model
 model.save_model("model.pkl")
@@ -41,6 +42,7 @@ for i in sample_indices:
     print(f"Real class: {real_class}")
     print("-----------")
 
+'''
 # Plot loss and accuracy
 plt.figure(figsize=(12, 4))
 plt.subplot(121)
@@ -57,4 +59,4 @@ plt.xlabel("Epoch")
 plt.ylabel("Accuracy")
 plt.legend()
 plt.show()
-
+'''

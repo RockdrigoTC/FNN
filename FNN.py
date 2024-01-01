@@ -103,7 +103,6 @@ class FNN:
             # Forward and backward propagation
             y_hat = self.forward(X)
             self.backward(X, y, learning_rate)
-
             # Compute loss and accuracy
             self.evaluate(X, y, x_test, y_test, y_hat)
             
