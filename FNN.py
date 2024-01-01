@@ -4,6 +4,15 @@ import pickle
 # Layer class definition
 class Layer:
     def __init__(self, input_size=None, output_size=None, activation_function='sigmoid', weight_init='random'):
+        """
+        Layer class constructor
+        Args:
+            input_size (int)             : Size of the input layer
+            output_size (int)            : Size of the output layer
+            activation_function (string) : Activation function
+            weight_init (string)         : Weight initialization method
+        """
+
         self.input_size = input_size
         self.output_size = output_size
         self.activation_function = activation_function
@@ -22,6 +31,14 @@ class Layer:
         self.biases = np.zeros((1, self.output_size))
 
     def activate(self, x):
+        """
+        Activation function
+        Args:
+            x (ndarray)  : Input data
+
+        Returns:
+            ndarray      : Output data
+        """
         if self.activation_function == 'sigmoid':
             return 1 / (1 + np.exp(-x))
         elif self.activation_function == 'softmax':
@@ -34,19 +51,39 @@ class Layer:
 # Feedforward Neural Network class definition
 class FNN:
     def __init__(self, layers=None):
+        """
+        FNN class constructor
+        Args:
+            layers (list) : List of Layer objects
+        """
         self.layers = layers
         self.history = {'loss': [], 'accuracyTrain': [], 'accuracyTest': []}
 
-    # Forward propagation
     def forward(self, X):
+        """
+        Forward propagation
+        Args:
+            X (ndarray(m, n))      : Input data
+
+        Returns:
+            activations (ndarray)  : Output data
+        """
+
         activations = X
         for layer in self.layers:
             z = np.dot(activations, layer.weights) + layer.biases
             activations = layer.activate(z)
         return activations
 
-    # Backward propagation
     def backward(self, X, y, learning_rate=0.01):
+        """
+        Backpropagation
+        Args:
+            X (ndarray(m, n))      : Input data
+            y (ndarray(m, ))       : Target data
+            learning_rate (float)  : Learning rate
+        """
+
         m = X.shape[0]
         activations = X
         layer_inputs = []
@@ -87,8 +124,18 @@ class FNN:
             # Store the error for the next iteration
             next_layer = layer
 
-    # Training
     def train(self, X=None, y=None, x_test=None, y_test=None, epochs=10, learning_rate=0.01):
+        """
+        Training
+        Args:
+            X (ndarray(m, n))      : Input data
+            y (ndarray(m, ))       : Target data
+            x_test (ndarray(m, n)) : Input data for testing
+            y_test (ndarray(m, ))  : Target data for testing
+            epochs (int)           : Number of epochs
+            learning_rate (float)  : Learning rate
+        """
+
         if X is None or y is None:
             raise ValueError("X or y is None")
         if X.shape[0] != y.shape[0]:
@@ -105,9 +152,18 @@ class FNN:
             self.backward(X, y, learning_rate)
             # Compute loss and accuracy
             self.evaluate(X, y, x_test, y_test, y_hat)
-            
-    # Evaluation
+    
     def evaluate(self, X, y, x_test, y_test, y_hat):
+        """
+        Evaluation
+        Args:
+            X (ndarray(m, n))      : Input data
+            y (ndarray(m, ))       : Target data
+            x_test (ndarray(m, n)) : Input data for testing
+            y_test (ndarray(m, ))  : Target data for testing
+            y_hat (ndarray(m, ))   : Predicted data
+        """
+
         loss = self.loss_cross_entropy(y, y_hat)
         accuracy_train = self.accuracy(y, y_hat)
         if x_test is not None or y_test is not None:
@@ -120,23 +176,56 @@ class FNN:
         self.history['loss'].append(loss)
         self.history['accuracyTrain'].append(accuracy_train)
 
-    # Prediction
     def predict(self, X):
+        """
+        Prediction
+        Args:
+            X (ndarray(m, n))      : Input data
+
+        Returns:
+            ndarray(m, )           : Predicted data
+        """
+
         # Return the index of the highest probability
         return np.argmax(self.forward(X), axis=1)
 
-    # Loss function(cross entropy)
     def loss_cross_entropy(self, y, y_pred):
-        # Cross entropy loss function: -1/N * sum(y * log(y_pred))
+        """
+        Cross entropy loss function
+        Args:
+            y (ndarray(m, ))       : Target data
+            y_pred (ndarray(m, ))  : Predicted data
+
+        Returns:
+            float                  : Loss 1/N * sum(y * log(y_pred))
+        """
+
         return -np.mean(y * np.log(y_pred + 1e-10))
-    
-    # Loss function(mse)
+
     def loss_mse(self, y, y_pred):
-        # Mean squared error loss function formula: 1/N * sum((y - y_pred)^2)
+        """
+        Mean squared error loss function
+        Args:
+            y (ndarray(m, ))       : Target data
+            y_pred (ndarray(m, ))  : Predicted data
+            
+        Returns:
+            float                  : Loss 1/N * sum((y - y_pred)^2)
+        """
+ 
         return np.mean(np.square(y - y_pred))
     
     def accuracy(self, y, y_pred):
-        # Accuracy calculation: (Number of correct predictions) / (Total number of predictions)
+        """
+        Accuracy
+        Args:
+            y (ndarray(m, ))       : Target data
+            y_pred (ndarray(m, ))  : Predicted data
+
+        Returns:
+            float                  : Accuracy (Number of correct predictions) / (Total number of predictions)
+        """
+
         return np.mean(np.argmax(y_pred, axis=1) == np.argmax(y, axis=1))
     
     # Save the model to a file
