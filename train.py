@@ -42,7 +42,7 @@ for i in sample_indices:
     print(f"Real class: {real_class}")
     print("-----------")
 
-'''
+"""
 # Plot loss and accuracy
 plt.figure(figsize=(12, 4))
 plt.subplot(121)
@@ -59,4 +59,4 @@ plt.xlabel("Epoch")
 plt.ylabel("Accuracy")
 plt.legend()
 plt.show()
-'''
+"""

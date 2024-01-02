@@ -145,6 +145,8 @@ class FNN:
         if y.shape[1] != self.layers[-1].output_size:
             raise ValueError(f"Output size of the last layer doesn't match: {y.shape[1]} != {self.layers[-1].output_size}")
         
+        self.summary()
+        
         for i in range(epochs):
             print("Epoch #", i)
             # Forward and backward propagation
@@ -239,3 +241,16 @@ class FNN:
             loaded_model = pickle.load(file)
         # Copy the loaded model's parameters to the current model
         self.__dict__.update(loaded_model.__dict__)
+
+    def summary(self):
+        """
+        Print a summary of the model
+        """
+
+        print("---------------")
+        print("Summary:")
+        print(f"Input size: {self.layers[0].input_size}")
+        for i, layer in enumerate(self.layers):
+            print(f"Layer {i + 1}: {layer.input_size} -> {layer.output_size} ({layer.activation_function})")
+        print(f"Output size: {self.layers[-1].output_size}")
+        print("---------------")
