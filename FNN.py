@@ -3,7 +3,7 @@ import pickle
 
 # Layer class definition
 class Layer:
-    def __init__(self, input_size=None, output_size=None, activation='sigmoid', weight_init='random'):
+    def __init__(self, input_size=None, output_size=None, activation='sigmoid',optimizer='sgd' , weight_init='random'):
         """
         Layer class constructor
         Args:
@@ -16,6 +16,8 @@ class Layer:
         self.input_size = input_size
         self.output_size = output_size
         self.activation_function = activation
+        self.optimizer = optimizer
+        self.t = 0
 
         if weight_init == 'he':
             scale = np.sqrt(2.0 / self.input_size)
@@ -29,6 +31,12 @@ class Layer:
         # Weights and biases initialization
         self.weights = np.random.randn(self.input_size, self.output_size) * scale
         self.biases = np.zeros((1, self.output_size))
+
+        # Optimizer moments initialization
+        self.v_weights = np.zeros_like(self.weights)
+        self.v_biases = np.zeros_like(self.biases)
+        self.s_weights = np.zeros_like(self.weights)
+        self.s_biases = np.zeros_like(self.biases)
 
     def activate(self, x):
         """
@@ -54,8 +62,51 @@ class Layer:
             return np.tanh(x)
         else:
             raise ValueError(f"Unknown activation function: {self.activation_function}")
-
-
+        
+    def update_weights(self, learning_rate, grad_weights, grad_biases):
+        """
+        Update weights and biases using the specified optimizer
+        Args:
+            learning_rate (float)  : Learning rate (alpha)
+            grad_weights (ndarray) : Gradient of weights
+            grad_biases (ndarray)  : Gradient of biases
+        """
+        if self.optimizer == 'sgd':
+            # Stochastic gradient descent
+            self.weights -= learning_rate * grad_weights
+            self.biases -= learning_rate * grad_biases
+        elif self.optimizer == 'momentum':
+            # Momentum
+            beta = 0.9
+            self.v_weights = beta * self.v_weights + (1 - beta) * grad_weights
+            self.v_biases = beta * self.v_biases + (1 - beta) * grad_biases
+            self.weights -= learning_rate * self.v_weights
+            self.biases -= learning_rate * self.v_biases
+        elif self.optimizer == 'rmsprop':
+            # RMSprop
+            beta = 0.9
+            self.s_weights = beta * self.s_weights + (1 - beta) * np.square(grad_weights)
+            self.s_biases = beta * self.s_biases + (1 - beta) * np.square(grad_biases)
+            self.weights -= learning_rate * grad_weights / (np.sqrt(self.s_weights) + 1e-10)
+            self.biases -= learning_rate * grad_biases / (np.sqrt(self.s_biases) + 1e-10)
+        elif self.optimizer == 'adam':
+            # Adam
+            beta1 = 0.9
+            beta2 = 0.999
+            self.v_weights = beta1 * self.v_weights + (1 - beta1) * grad_weights
+            self.v_biases = beta1 * self.v_biases + (1 - beta1) * grad_biases
+            self.s_weights = beta2 * self.s_weights + (1 - beta2) * np.square(grad_weights)
+            self.s_biases = beta2 * self.s_biases + (1 - beta2) * np.square(grad_biases)
+            self.t += 1
+            v_weights_corrected = self.v_weights / (1 - beta1 ** self.t)
+            v_biases_corrected = self.v_biases / (1 - beta1 ** self.t)
+            s_weights_corrected = self.s_weights / (1 - beta2 ** self.t)
+            s_biases_corrected = self.s_biases / (1 - beta2 ** self.t)
+            self.weights -= learning_rate * v_weights_corrected / (np.sqrt(s_weights_corrected) + 1e-10)
+            self.biases -= learning_rate * v_biases_corrected / (np.sqrt(s_biases_corrected) + 1e-10)
+        else:
+            raise ValueError(f"Unknown optimizer: {self.optimizer}")
+            
 # Feedforward Neural Network class definition
 class FNN:
     def __init__(self, layers=None):
@@ -89,7 +140,8 @@ class FNN:
         Args:
             X (ndarray(m, n))      : Input data
             y (ndarray(m, ))       : Target data
-            learning_rate (float)  : Learning rate
+            learning_rate (float)  : Learning rate (alpha)
+            optimizer (string)     : Optimizer
         """
 
         m = X.shape[0]
@@ -125,13 +177,12 @@ class FNN:
             layer.grad_weights = np.dot(prev_output.T, layer.error) / m
             layer.grad_biases = np.sum(layer.error, axis=0) / m
 
-            # Update weights and biases using gradients and learning rate
-            layer.weights -= learning_rate * layer.grad_weights
-            layer.biases -= learning_rate * layer.grad_biases
-
+            # Update weights and biases using the specified optimizer
+            layer.update_weights(learning_rate, layer.grad_weights, layer.grad_biases)
+            
             # Store the error for the next iteration
             next_layer = layer
-
+            
     def train(self, X=None, y=None, x_test=None, y_test=None, epochs=10, learning_rate=0.01, batch_size=None):
         """
         Training
@@ -276,12 +327,12 @@ class FNN:
         """
 
         print("---------------")
-        print("Summary:")
+        print("**Summary**:\n")
         print(f"Learning rate: {learning_rate}")
         print(f"Batch size: {batch_size}")
-        print(f"Epochs: {epochs}")
+        print(f"Epochs: {epochs}")    
         print(f"Input size: {self.layers[0].input_size}")
-        for i, layer in enumerate(self.layers):
-            print(f"Layer {i + 1}: {layer.input_size} -> {layer.output_size} ({layer.activation_function})")
         print(f"Output size: {self.layers[-1].output_size}")
+        for i, layer in enumerate(self.layers):
+            print(f"Layer {i + 1}: \n  - {layer.input_size} -> {layer.output_size} \n  - Activation: {layer.activation_function} \n  - Optimizer: {layer.optimizer}")
         print("---------------")
