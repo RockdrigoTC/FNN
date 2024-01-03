@@ -3,7 +3,7 @@ import pickle
 
 # Layer class definition
 class Layer:
-    def __init__(self, input_size=None, output_size=None, activation_function='sigmoid', weight_init='random'):
+    def __init__(self, input_size=None, output_size=None, activation='sigmoid', weight_init='random'):
         """
         Layer class constructor
         Args:
@@ -15,7 +15,7 @@ class Layer:
 
         self.input_size = input_size
         self.output_size = output_size
-        self.activation_function = activation_function
+        self.activation_function = activation
 
         if weight_init == 'he':
             scale = np.sqrt(2.0 / self.input_size)
@@ -40,10 +40,18 @@ class Layer:
             ndarray      : Output data
         """
         if self.activation_function == 'sigmoid':
+            # Sigmoid function: 1 / (1 + e^(-x))
             return 1 / (1 + np.exp(-x))
         elif self.activation_function == 'softmax':
-            exps = np.exp(x - np.max(x))
+            # Softmax function: e^(x - max(x)) / sum(e^(x - max(x)))
+            exps = np.exp(x - np.max(x, axis=1, keepdims=True))
             return exps / np.sum(exps, axis=1, keepdims=True)
+        elif self.activation_function == 'relu':
+            # ReLU function: max(0, x)
+            return np.maximum(0, x)
+        elif self.activation_function == 'tanh':
+            # Tanh function: (e^x - e^(-x)) / (e^x + e^(-x))
+            return np.tanh(x)
         else:
             raise ValueError(f"Unknown activation function: {self.activation_function}")
 
@@ -124,16 +132,17 @@ class FNN:
             # Store the error for the next iteration
             next_layer = layer
 
-    def train(self, X=None, y=None, x_test=None, y_test=None, epochs=10, learning_rate=0.01):
+    def train(self, X=None, y=None, x_test=None, y_test=None, epochs=10, learning_rate=0.01, batch_size=None):
         """
         Training
         Args:
             X (ndarray(m, n))      : Input data
             y (ndarray(m, ))       : Target data
-            x_test (ndarray(m, n)) : Input data for testing
-            y_test (ndarray(m, ))  : Target data for testing
-            epochs (int)           : Number of epochs
-            learning_rate (float)  : Learning rate
+            x_test (ndarray(m, n)) : Input data for testing (Optional)
+            y_test (ndarray(m, ))  : Target data for testing (Optional)
+            epochs (int)           : Number of epochs (Number of times the entire dataset is passed forward and backward through the neural network)
+            learning_rate (float)  : Learning rate (alpha)
+            batch_size (int)       : Batch size (Number of samples per gradient update)
         """
 
         if X is None or y is None:
@@ -144,18 +153,37 @@ class FNN:
             raise ValueError(f"Input size of the first layer doesn't match: {X.shape[1]} != {self.layers[0].input_size}")
         if y.shape[1] != self.layers[-1].output_size:
             raise ValueError(f"Output size of the last layer doesn't match: {y.shape[1]} != {self.layers[-1].output_size}")
+        if batch_size is not None and batch_size > X.shape[0]:
+            raise ValueError(f"Batch size is greater than the number of samples: {batch_size} > {X.shape[0]}")
         
-        self.summary()
+        self.summary(learning_rate=learning_rate, batch_size=batch_size, epochs=epochs)
         
         for i in range(epochs):
             print("Epoch #", i)
-            # Forward and backward propagation
-            y_hat = self.forward(X)
-            self.backward(X, y, learning_rate)
-            # Compute loss and accuracy
-            self.evaluate(X, y, x_test, y_test, y_hat)
+            if batch_size is None:
+                # Forward propagation
+                self.forward(X)
+
+                # Backpropagation
+                self.backward(X, y, learning_rate)
+
+            else:
+                for j in range(0, X.shape[0], batch_size):
+                    # Split the dataset into batches
+                    X_batch = X[j:j + batch_size]
+                    y_batch = y[j:j + batch_size]
+
+                    # Forward propagation
+                    self.forward(X_batch)
+
+                    # Backpropagation
+                    self.backward(X_batch, y_batch, learning_rate)
+
+            # Evaluation
+            self.evaluate(X, y, x_test, y_test)
+
     
-    def evaluate(self, X, y, x_test, y_test, y_hat):
+    def evaluate(self, X, y, x_test, y_test):
         """
         Evaluation
         Args:
@@ -165,7 +193,7 @@ class FNN:
             y_test (ndarray(m, ))  : Target data for testing
             y_hat (ndarray(m, ))   : Predicted data
         """
-
+        y_hat = self.forward(X)
         loss = self.loss_cross_entropy(y, y_hat)
         accuracy_train = self.accuracy(y, y_hat)
         if x_test is not None or y_test is not None:
@@ -228,7 +256,7 @@ class FNN:
             float                  : Accuracy (Number of correct predictions) / (Total number of predictions)
         """
 
-        return np.mean(np.argmax(y_pred, axis=1) == np.argmax(y, axis=1))
+        return np.sum(np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)) / len(y)
     
     # Save the model to a file
     def save_model(self, filename):
@@ -242,13 +270,16 @@ class FNN:
         # Copy the loaded model's parameters to the current model
         self.__dict__.update(loaded_model.__dict__)
 
-    def summary(self):
+    def summary(self,learning_rate=None, batch_size=None, epochs=None):
         """
         Print a summary of the model
         """
 
         print("---------------")
         print("Summary:")
+        print(f"Learning rate: {learning_rate}")
+        print(f"Batch size: {batch_size}")
+        print(f"Epochs: {epochs}")
         print(f"Input size: {self.layers[0].input_size}")
         for i, layer in enumerate(self.layers):
             print(f"Layer {i + 1}: {layer.input_size} -> {layer.output_size} ({layer.activation_function})")
