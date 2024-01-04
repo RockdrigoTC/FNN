@@ -7,10 +7,11 @@ class Layer:
         """
         Layer class constructor
         Args:
-            input_size (int)             : Size of the input layer
-            output_size (int)            : Size of the output layer
-            activation_function (string) : Activation function
-            weight_init (string)         : Weight initialization method
+            input_size (int)              : Size of the input layer
+            output_size (int)             : Size of the output layer
+            activation_function (string)  : Activation function
+            optimizer (string)            : Optimizer method
+            weight_init (string)          : Weight initialization method
         """
 
         self.input_size = input_size
@@ -67,9 +68,9 @@ class Layer:
         """
         Update weights and biases using the specified optimizer
         Args:
-            learning_rate (float)  : Learning rate (alpha)
-            grad_weights (ndarray) : Gradient of weights
-            grad_biases (ndarray)  : Gradient of biases
+            learning_rate (float)   : Learning rate (alpha)
+            grad_weights (ndarray)  : Gradient of weights
+            grad_biases (ndarray)   : Gradient of biases
         """
         if self.optimizer == 'sgd':
             # Stochastic gradient descent
@@ -113,7 +114,7 @@ class FNN:
         """
         FNN class constructor
         Args:
-            layers (list) : List of Layer objects
+            layers (list)  : List of Layer objects
         """
         self.layers = layers
         self.history = {'loss': [], 'accuracyTrain': [], 'accuracyTest': []}
@@ -122,7 +123,7 @@ class FNN:
         """
         Forward propagation
         Args:
-            X (ndarray(m, n))      : Input data
+            X (ndarray)            : Input data
 
         Returns:
             activations (ndarray)  : Output data
@@ -138,10 +139,9 @@ class FNN:
         """
         Backpropagation
         Args:
-            X (ndarray(m, n))      : Input data
-            y (ndarray(m, ))       : Target data
+            X (ndarray)            : Input data
+            y (ndarray)            : Target data
             learning_rate (float)  : Learning rate (alpha)
-            optimizer (string)     : Optimizer
         """
 
         m = X.shape[0]
@@ -187,10 +187,10 @@ class FNN:
         """
         Training
         Args:
-            X (ndarray(m, n))      : Input data
-            y (ndarray(m, ))       : Target data
-            x_test (ndarray(m, n)) : Input data for testing (Optional)
-            y_test (ndarray(m, ))  : Target data for testing (Optional)
+            X (ndarray)            : Input data
+            y (ndarray)            : Target data
+            x_test (ndarray)       : Input data for testing (Optional)
+            y_test (ndarray)       : Target data for testing (Optional)
             epochs (int)           : Number of epochs (Number of times the entire dataset is passed forward and backward through the neural network)
             learning_rate (float)  : Learning rate (alpha)
             batch_size (int)       : Batch size (Number of samples per gradient update)
@@ -238,11 +238,11 @@ class FNN:
         """
         Evaluation
         Args:
-            X (ndarray(m, n))      : Input data
-            y (ndarray(m, ))       : Target data
-            x_test (ndarray(m, n)) : Input data for testing
-            y_test (ndarray(m, ))  : Target data for testing
-            y_hat (ndarray(m, ))   : Predicted data
+            X (ndarray)       : Input data
+            y (ndarray)       : Target data
+            x_test (ndarray)  : Input data for testing
+            y_test (ndarray)  : Target data for testing
+            y_hat (ndarray)   : Predicted data
         """
         y_hat = self.forward(X)
         loss = self.loss_cross_entropy(y, y_hat)
@@ -261,10 +261,10 @@ class FNN:
         """
         Prediction
         Args:
-            X (ndarray(m, n))      : Input data
+            X (ndarray)  : Input data
 
         Returns:
-            ndarray(m, )           : Predicted data
+            (ndarray)    : Predicted data
         """
 
         # Return the index of the highest probability
@@ -274,11 +274,11 @@ class FNN:
         """
         Cross entropy loss function
         Args:
-            y (ndarray(m, ))       : Target data
-            y_pred (ndarray(m, ))  : Predicted data
+            y (ndarray)       : Target data
+            y_pred (ndarray)  : Predicted data
 
         Returns:
-            float                  : Loss 1/N * sum(y * log(y_pred))
+            (float)           : Loss 1/N * sum(y * log(y_pred))
         """
 
         return -np.mean(y * np.log(y_pred + 1e-10))
@@ -287,11 +287,11 @@ class FNN:
         """
         Mean squared error loss function
         Args:
-            y (ndarray(m, ))       : Target data
-            y_pred (ndarray(m, ))  : Predicted data
+            y (ndarray)       : Target data
+            y_pred (ndarray)  : Predicted data
             
         Returns:
-            float                  : Loss 1/N * sum((y - y_pred)^2)
+            (float)           : Loss 1/N * sum((y - y_pred)^2)
         """
  
         return np.mean(np.square(y - y_pred))
@@ -300,11 +300,11 @@ class FNN:
         """
         Accuracy
         Args:
-            y (ndarray(m, ))       : Target data
-            y_pred (ndarray(m, ))  : Predicted data
+            y (ndarray)       : Target data
+            y_pred (ndarray)  : Predicted data
 
         Returns:
-            float                  : Accuracy (Number of correct predictions) / (Total number of predictions)
+            (float)           : Accuracy (Number of correct predictions) / (Total number of predictions)
         """
 
         return np.sum(np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)) / len(y)

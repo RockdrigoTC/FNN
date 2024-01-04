@@ -35,6 +35,7 @@ Examples:
     - Change the number of epochs: epoch = 10, epoch = 100, epoch = 200, etc.
     - Change the batch size: batch_size = 32, batch_size = 64, batch_size = 1000. batch_size = 10000, etc.
     - Change the optimizer: optimizer='sgd', optimizer='momentum', optimizer='rmsprop'or optimizer='adam'.
+    - Change the mount of data for training: train_size = 100, train_size = 1000, train_size = 10000, etc.
 """
 
 # Create and train the model
@@ -47,14 +48,14 @@ model.save_model("model.pkl")
 # Load the model
 model.load_model("model.pkl")
 
-# Single prediction
+# Single prediction (Example)
 predict = model.predict(X_test[0]).astype(int)
 real_class = np.argmax(y_test[0]).astype(int)
 print(f"\nPredicted class: {predict}")
 print(f"Real class: {real_class}")
 print("-----------")
 
-# Multiple predictions
+# Multiple predictions (Example)
 sample_indices = np.random.choice(len(X_test), size=10, replace=False)
 for i in sample_indices:
     predict = model.predict(X_test[i]).astype(int)
@@ -64,7 +65,7 @@ for i in sample_indices:
     print("-----------")
 
 
-# Plot loss and accuracy
+# Plot loss and accuracy (Example)
 plt.figure(figsize=(12, 4))
 plt.subplot(121)
 plt.plot(model.history['loss'])
