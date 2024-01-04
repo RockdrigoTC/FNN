@@ -3,21 +3,30 @@ import pickle
 
 # Layer class definition
 class Layer:
-    def __init__(self, input_size=None, output_size=None, activation='sigmoid',optimizer='sgd' , weight_init='random'):
-        """
-        Layer class constructor
-        Args:
-            input_size (int)              : Size of the input layer
-            output_size (int)             : Size of the output layer
-            activation_function (string)  : Activation function
-            optimizer (string)            : Optimizer method
-            weight_init (string)          : Weight initialization method
-        """
+    """
+    Layer(obj)
 
+    ----------
+    Parameters
+    ----------
+        input_size (int)              : Size of the input layer
+        output_size (int)             : Size of the output layer
+        activation_function (string)  : Activation function
+        optimizer (string)            : Optimizer method
+        weight_init (string)          : Weight initialization method
+        beta1 (float)                 : Beta 1 (Used in momentum, RMSprop and Adam optimizers)
+        beta2 (float)                 : Beta 2 (Used in Adam optimizer)
+        dropout (float)               : Dropout rate
+    """
+
+    def __init__(self, input_size=None, output_size=None, activation='sigmoid',optimizer='sgd', weight_init='random', beta1=0.9, beta2=0.999, dropout=0.0):
         self.input_size = input_size
         self.output_size = output_size
         self.activation_function = activation
         self.optimizer = optimizer
+        self.dropout_rate = dropout
+        self.dropout_mask = None
+        self.error = None
         self.t = 0
 
         if weight_init == 'he':
@@ -38,16 +47,31 @@ class Layer:
         self.v_biases = np.zeros_like(self.biases)
         self.s_weights = np.zeros_like(self.weights)
         self.s_biases = np.zeros_like(self.biases)
+        self.beta1 = beta1
+        self.beta2 = beta2
+
+        # Adagrad
+        self.G_weights = np.zeros_like(self.weights)
+        self.G_biases = np.zeros_like(self.biases)
 
     def activate(self, x):
         """
-        Activation function
-        Args:
+        Description: Compute the activation function for the input data, and apply Dropout if necessary
+
+        ----------
+        Parameters
+        ----------
             x (ndarray)  : Input data
 
-        Returns:
-            ndarray      : Output data
+        Returns
+        -------
+            ndarray      : Result of the activation function
         """
+
+        if self.dropout_rate > 0.0:
+            # Generar una máscara de Dropout y aplicarla
+            self.dropout_mask = (np.random.rand(*x.shape) >= self.dropout_rate).astype(float)
+            x *= self.dropout_mask
         if self.activation_function == 'sigmoid':
             # Sigmoid function: 1 / (1 + e^(-x))
             return 1 / (1 + np.exp(-x))
@@ -67,10 +91,17 @@ class Layer:
     def update_weights(self, learning_rate, grad_weights, grad_biases):
         """
         Update weights and biases using the specified optimizer
-        Args:
+
+        ----------
+        Parameters
+        ----------
             learning_rate (float)   : Learning rate (alpha)
             grad_weights (ndarray)  : Gradient of weights
             grad_biases (ndarray)   : Gradient of biases
+        
+        Returns
+        -------
+            None
         """
         if self.optimizer == 'sgd':
             # Stochastic gradient descent
@@ -78,54 +109,62 @@ class Layer:
             self.biases -= learning_rate * grad_biases
         elif self.optimizer == 'momentum':
             # Momentum
-            beta = 0.9
-            self.v_weights = beta * self.v_weights + (1 - beta) * grad_weights
-            self.v_biases = beta * self.v_biases + (1 - beta) * grad_biases
+            self.v_weights = self.beta1 * self.v_weights + (1 - self.beta1) * grad_weights
+            self.v_biases = self.beta1 * self.v_biases + (1 - self.beta1) * grad_biases
             self.weights -= learning_rate * self.v_weights
             self.biases -= learning_rate * self.v_biases
         elif self.optimizer == 'rmsprop':
             # RMSprop
-            beta = 0.9
-            self.s_weights = beta * self.s_weights + (1 - beta) * np.square(grad_weights)
-            self.s_biases = beta * self.s_biases + (1 - beta) * np.square(grad_biases)
+            self.s_weights = self.beta1 * self.s_weights + (1 - self.beta1) * np.square(grad_weights)
+            self.s_biases = self.beta1 * self.s_biases + (1 - self.beta1) * np.square(grad_biases)
             self.weights -= learning_rate * grad_weights / (np.sqrt(self.s_weights) + 1e-10)
             self.biases -= learning_rate * grad_biases / (np.sqrt(self.s_biases) + 1e-10)
         elif self.optimizer == 'adam':
             # Adam
-            beta1 = 0.9
-            beta2 = 0.999
-            self.v_weights = beta1 * self.v_weights + (1 - beta1) * grad_weights
-            self.v_biases = beta1 * self.v_biases + (1 - beta1) * grad_biases
-            self.s_weights = beta2 * self.s_weights + (1 - beta2) * np.square(grad_weights)
-            self.s_biases = beta2 * self.s_biases + (1 - beta2) * np.square(grad_biases)
+            self.v_weights = self.beta1 * self.v_weights + (1 - self.beta1) * grad_weights
+            self.v_biases = self.beta1 * self.v_biases + (1 - self.beta1) * grad_biases
+            self.s_weights = self.beta2 * self.s_weights + (1 - self.beta2) * np.square(grad_weights)
+            self.s_biases = self.beta2 * self.s_biases + (1 - self.beta2) * np.square(grad_biases)
             self.t += 1
-            v_weights_corrected = self.v_weights / (1 - beta1 ** self.t)
-            v_biases_corrected = self.v_biases / (1 - beta1 ** self.t)
-            s_weights_corrected = self.s_weights / (1 - beta2 ** self.t)
-            s_biases_corrected = self.s_biases / (1 - beta2 ** self.t)
+            v_weights_corrected = self.v_weights / (1 - self.beta1 ** self.t)
+            v_biases_corrected = self.v_biases / (1 - self.beta1 ** self.t)
+            s_weights_corrected = self.s_weights / (1 - self.beta2 ** self.t)
+            s_biases_corrected = self.s_biases / (1 - self.beta2 ** self.t)
             self.weights -= learning_rate * v_weights_corrected / (np.sqrt(s_weights_corrected) + 1e-10)
             self.biases -= learning_rate * v_biases_corrected / (np.sqrt(s_biases_corrected) + 1e-10)
+        elif self.optimizer == 'adagrad':
+            # Adagrad
+            self.G_weights += np.square(grad_weights)
+            self.G_biases += np.square(grad_biases)
+            self.weights -= learning_rate * grad_weights / (np.sqrt(self.G_weights) + 1e-10)
+            self.biases -= learning_rate * grad_biases / (np.sqrt(self.G_biases) + 1e-10)
         else:
             raise ValueError(f"Unknown optimizer: {self.optimizer}")
             
 # Feedforward Neural Network class definition
 class FNN:
+    """
+    FNN(obj)
+
+    ----------
+    Parameters
+    ----------
+        layers (list)  : List of Layer objects
+    """
     def __init__(self, layers=None):
-        """
-        FNN class constructor
-        Args:
-            layers (list)  : List of Layer objects
-        """
         self.layers = layers
         self.history = {'loss': [], 'accuracyTrain': [], 'accuracyTest': []}
 
     def forward(self, X):
         """
-        Forward propagation
-        Args:
+        Forward propagation through the network
+
+        Parameters
+        ----------
             X (ndarray)            : Input data
 
-        Returns:
+        Returns
+        -------
             activations (ndarray)  : Output data
         """
 
@@ -137,13 +176,19 @@ class FNN:
 
     def backward(self, X, y, learning_rate=0.01):
         """
-        Backpropagation
-        Args:
+        Backward propagation through the network. Compute gradients for each layer and update weights and biases using the specified optimizer.
+
+        ----------
+        Parameters
+        ----------
             X (ndarray)            : Input data
             y (ndarray)            : Target data
             learning_rate (float)  : Learning rate (alpha)
+        
+        Returns
+        -------
+            None
         """
-
         m = X.shape[0]
         activations = X
         layer_inputs = []
@@ -173,20 +218,28 @@ class FNN:
                 # Compute the error at the hidden layer
                 layer.error = np.dot(next_layer.error, next_layer.weights.T) * (current_output * (1 - current_output))
 
+            # Apply Dropout during backpropagation
+            if layer.dropout_rate > 0.0:
+                layer.error *= layer.dropout_mask
+
             # Compute gradients for the layer
             layer.grad_weights = np.dot(prev_output.T, layer.error) / m
             layer.grad_biases = np.sum(layer.error, axis=0) / m
 
             # Update weights and biases using the specified optimizer
             layer.update_weights(learning_rate, layer.grad_weights, layer.grad_biases)
-            
+
             # Store the error for the next iteration
             next_layer = layer
+
             
-    def train(self, X=None, y=None, x_test=None, y_test=None, epochs=10, learning_rate=0.01, batch_size=None):
+    def train(self, X=None, y=None, x_test=None, y_test=None, epochs=10, learning_rate=0.01, batch_size=None, patience=0):
         """
-        Training
-        Args:
+        Train the model and evaluate it after each epoch
+
+        ----------
+        Parameters
+        ----------
             X (ndarray)            : Input data
             y (ndarray)            : Target data
             x_test (ndarray)       : Input data for testing (Optional)
@@ -194,6 +247,11 @@ class FNN:
             epochs (int)           : Number of epochs (Number of times the entire dataset is passed forward and backward through the neural network)
             learning_rate (float)  : Learning rate (alpha)
             batch_size (int)       : Batch size (Number of samples per gradient update)
+            patience (int)         : Patience for early stopping (Number of epochs with no improvement after which training will be stopped)
+
+        Returns
+        -------
+            None
         """
 
         if X is None or y is None:
@@ -207,8 +265,11 @@ class FNN:
         if batch_size is not None and batch_size > X.shape[0]:
             raise ValueError(f"Batch size is greater than the number of samples: {batch_size} > {X.shape[0]}")
         
-        self.summary(learning_rate=learning_rate, batch_size=batch_size, epochs=epochs)
+        self.summary(learning_rate=learning_rate, batch_size=batch_size, epochs=epochs, patience=patience)
         
+        best_accuracy = 0.0
+        wait = 0
+
         for i in range(epochs):
             print("Epoch #", i)
             if batch_size is None:
@@ -217,7 +278,6 @@ class FNN:
 
                 # Backpropagation
                 self.backward(X, y, learning_rate)
-
             else:
                 for j in range(0, X.shape[0], batch_size):
                     # Split the dataset into batches
@@ -233,16 +293,27 @@ class FNN:
             # Evaluation
             self.evaluate(X, y, x_test, y_test)
 
+            # Early stopping
+            stop, best_accuracy, wait = self.early_stopping(x_test, y_test, patience, i, best_accuracy, wait)
+            if stop: break
+
     
     def evaluate(self, X, y, x_test, y_test):
         """
-        Evaluation
-        Args:
+        Evaluate the model and print the loss and accuracy for the training and testing sets
+
+        ----------
+        Parameters
+        ----------
             X (ndarray)       : Input data
             y (ndarray)       : Target data
             x_test (ndarray)  : Input data for testing
             y_test (ndarray)  : Target data for testing
             y_hat (ndarray)   : Predicted data
+
+        Returns
+        -------
+            None
         """
         y_hat = self.forward(X)
         loss = self.loss_cross_entropy(y, y_hat)
@@ -259,64 +330,95 @@ class FNN:
 
     def predict(self, X):
         """
-        Prediction
-        Args:
+        Predict the class of the input data using the trained model
+
+        ----------
+        Parameters
+        ----------
             X (ndarray)  : Input data
 
-        Returns:
+        Returns
+        -------
             (ndarray)    : Predicted data
         """
-
         # Return the index of the highest probability
         return np.argmax(self.forward(X), axis=1)
 
     def loss_cross_entropy(self, y, y_pred):
         """
         Cross entropy loss function
-        Args:
+
+        ----------
+        Parameters
+        ----------
             y (ndarray)       : Target data
             y_pred (ndarray)  : Predicted data
 
-        Returns:
+        Returns
+        -------
             (float)           : Loss 1/N * sum(y * log(y_pred))
         """
-
         return -np.mean(y * np.log(y_pred + 1e-10))
 
     def loss_mse(self, y, y_pred):
         """
         Mean squared error loss function
-        Args:
+
+        ----------
+        Parameters
             y (ndarray)       : Target data
             y_pred (ndarray)  : Predicted data
             
-        Returns:
+        Returns
             (float)           : Loss 1/N * sum((y - y_pred)^2)
         """
- 
         return np.mean(np.square(y - y_pred))
+    
+    def loss_hinge(self, y, y_pred):
+        """
+        Hinge loss function
+
+        ----------
+        Parameters
+        ----------
+            y (ndarray)       : Target data
+            y_pred (ndarray)  : Predicted data
+            
+        Returns
+        -------
+            (float)           : Loss 1/N * sum(max(0, 1 - y * y_pred))
+        """
+        return np.mean(np.maximum(0, 1 - y * y_pred))
     
     def accuracy(self, y, y_pred):
         """
-        Accuracy
-        Args:
+        Accuracy metric
+
+        ----------
+        Parameters
+        ----------
             y (ndarray)       : Target data
             y_pred (ndarray)  : Predicted data
 
-        Returns:
+        Returns
+        -------
             (float)           : Accuracy (Number of correct predictions) / (Total number of predictions)
         """
-
-        return np.sum(np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)) / len(y)
+        return np.sum(np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)) / len(y)  
     
     # Save the model to a file
     def save_model(self, filename):
         """
         Save the model to a file
-        Args:
-            filename (string)  : File name
-        """
 
+        ----------
+        Parameters
+        ----------
+            filename (string)  : File name
+
+        Returns
+        -------
+        """
         with open(filename, 'wb') as file:
             pickle.dump(self, file)
 
@@ -324,8 +426,15 @@ class FNN:
     def load_model(self, filename):
         """
         Load the model from a file
-        Args:
+
+        ----------
+        Parameters
+        ----------
             filename (string)  : File name
+        
+        Returns
+        -------
+            None
         """
         
         with open(filename, 'rb') as file:
@@ -333,22 +442,65 @@ class FNN:
         # Copy the loaded model's parameters to the current model
         self.__dict__.update(loaded_model.__dict__)
 
-    def summary(self,learning_rate=None, batch_size=None, epochs=None):
+    def early_stopping(self, x_test, y_test, patience, i, best_accuracy, wait):
+        """
+        Early stopping
+
+        ----------
+        Parameters
+        -----------
+            x_test (ndarray)    : Input data for testing
+            y_test (ndarray)    : Target data for testing
+            patience (int)      : Patience for early stopping
+            i (int)             : Current epoch
+            best_accuracy (int) : Best accuracy
+            wait (int)          : Number of epochs with no improvement
+
+        Returns
+        --------
+            stop (bool)         : Early stopping
+            best_accuracy (int) : Best accuracy
+            wait (int)          : Number of epochs with no improvement
+        """
+        stop = False
+        if patience > 0 and x_test is not None and y_test is not None:
+            if self.history['accuracyTest'][-1] > best_accuracy:
+                best_accuracy = self.history['accuracyTest'][-1]
+                wait = 0
+            else:
+                wait += 1
+                if wait >= patience:
+                    print(f"\nEarly stopping at epoch {i}")
+                    stop = True
+        return stop, best_accuracy, wait
+
+    def summary(self,learning_rate=None, batch_size=None, epochs=None, patience=None):
         """
         Print a summary of the model
-        Args:
+
+        ----------
+        Parameters
+        ----------
             learning_rate (float)  : Learning rate
             batch_size (int)       : Batch size
             epochs (int)           : Number of epochs
+            patience (int)         : Patience for early stopping
+
+        Returns
+        -------
+            None
         """
 
         print("---------------")
         print("**Summary**:\n")
         print(f"Learning rate: {learning_rate}")
         print(f"Batch size: {batch_size}")
-        print(f"Epochs: {epochs}")    
+        print(f"Epochs: {epochs}")
+        print(f"Early stopping(patience): {patience}")
+        print(f"Number of layers: {len(self.layers)}")    
         print(f"Input size: {self.layers[0].input_size}")
         print(f"Output size: {self.layers[-1].output_size}")
         for i, layer in enumerate(self.layers):
-            print(f"Layer {i + 1}: \n  - {layer.input_size} -> {layer.output_size} \n  - Activation: {layer.activation_function} \n  - Optimizer: {layer.optimizer}")
+            print(f"Layer {i + 1}: \n  - {layer.input_size} -> {layer.output_size} \n  - Activation: {layer.activation_function}") 
+            print(f"  - Optimizer: {layer.optimizer} \n  - Beta 1: {layer.beta1} \n  - Beta 2: {layer.beta2} \n  - Dropout: {layer.dropout_rate}")      
         print("---------------")
