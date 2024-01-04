@@ -232,7 +232,6 @@ class FNN:
             # Store the error for the next iteration
             next_layer = layer
 
-            
     def train(self, X=None, y=None, x_test=None, y_test=None, epochs=10, learning_rate=0.01, batch_size=None, patience=0):
         """
         Train the model and evaluate it after each epoch
@@ -297,7 +296,6 @@ class FNN:
             stop, best_accuracy, wait = self.early_stopping(x_test, y_test, patience, i, best_accuracy, wait)
             if stop: break
 
-    
     def evaluate(self, X, y, x_test, y_test):
         """
         Evaluate the model and print the loss and accuracy for the training and testing sets
