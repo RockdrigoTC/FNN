@@ -18,7 +18,6 @@ class Layer:
         beta2 (float)                 : Beta 2 (Used in Adam optimizer)
         dropout (float)               : Dropout rate
     """
-
     def __init__(self, input_size=None, output_size=None, activation='sigmoid',optimizer='sgd', weight_init='random', beta1=0.9, beta2=0.999, dropout=0.0):
         self.input_size = input_size
         self.output_size = output_size
@@ -67,7 +66,6 @@ class Layer:
         -------
             ndarray      : Result of the activation function
         """
-
         if self.dropout_rate > 0.0:
             # Generar una máscara de Dropout y aplicarla
             self.dropout_mask = (np.random.rand(*x.shape) >= self.dropout_rate).astype(float)
@@ -167,7 +165,6 @@ class FNN:
         -------
             activations (ndarray)  : Output data
         """
-
         activations = X
         for layer in self.layers:
             z = np.dot(activations, layer.weights) + layer.biases
@@ -252,7 +249,6 @@ class FNN:
         -------
             None
         """
-
         if X is None or y is None:
             raise ValueError("X or y is None")
         if X.shape[0] != y.shape[0]:
@@ -434,7 +430,6 @@ class FNN:
         -------
             None
         """
-        
         with open(filename, 'rb') as file:
             loaded_model = pickle.load(file)
         # Copy the loaded model's parameters to the current model
@@ -488,7 +483,6 @@ class FNN:
         -------
             None
         """
-
         print("---------------")
         print("**Summary**:\n")
         print(f"Learning rate: {learning_rate}")
