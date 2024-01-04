@@ -10,7 +10,9 @@ The `FNN` class in this module represents the implementation of the Feedforward 
 
 - **Initialization**: Initialize the network with specified input, hidden, and output layer sizes. Weights are initialized based on the chosen method: random, He, or Glorot.
 
-- **Activation Functions**: Sigmoid activation for the hidden layer and softmax activation for the output layer.
+- **Activation Functions**: Sigmoid, Tanh, ReLU, and Leaky ReLU activation functions.
+
+- **Optimizers**: Stochastic Gradient Descent (SGD), SGD with Momentum, RMSProp, and Adam optimizers.
 
 - **Forward Propagation**: Calculate the output of the network given an input.
 
@@ -20,17 +22,17 @@ The `FNN` class in this module represents the implementation of the Feedforward 
 
 - **Evaluation and Prediction**: Evaluate the accuracy of the model on test data and make predictions.
 
-- **Save and Load Weights**: Functions to save and load the trained weights and biases.
+- **Save and Load**: Save and load the model to and from a file.
 
 - **Loss Functions**: Cross-entropy and Mean Squared Error (MSE) loss functions.
 
-### Data.py
+### data.py
 
-This module focuses on fetching and preprocessing the MNIST dataset. The dataset is divided into training and testing sets, normalized to the range [0, 1], and saved as NumPy arrays.
+This module contains functions to download and prepare datasets for training. Some of the datasets include: MNIST Handwritten Digits, Fashion-MNIST, Wine Quality, Diabetes, and Iris. You can also use other datasets. But probably you need to modify the code a little bit.
 
 ### train.py
 
-In this module, the FNN is trained using the MNIST dataset. The training data is loaded, one-hot encoded, and the model is trained for a specified number of epochs. The accuracy of the model on the test set is evaluated, and predictions are made on a sample of test data.
+In this module, you can train the FNN on the dataset you want. You can also change the hyperparameters of the model, such as the number of hidden layers, the activation function, the optimizer, the learning rate, the batch size, the number of epochs, and so on.
 
 ## Instructions
 
