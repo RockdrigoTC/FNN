@@ -311,11 +311,23 @@ class FNN:
     
     # Save the model to a file
     def save_model(self, filename):
+        """
+        Save the model to a file
+        Args:
+            filename (string)  : File name
+        """
+
         with open(filename, 'wb') as file:
             pickle.dump(self, file)
 
     # Load the model from a file
     def load_model(self, filename):
+        """
+        Load the model from a file
+        Args:
+            filename (string)  : File name
+        """
+        
         with open(filename, 'rb') as file:
             loaded_model = pickle.load(file)
         # Copy the loaded model's parameters to the current model
@@ -324,6 +336,10 @@ class FNN:
     def summary(self,learning_rate=None, batch_size=None, epochs=None):
         """
         Print a summary of the model
+        Args:
+            learning_rate (float)  : Learning rate
+            batch_size (int)       : Batch size
+            epochs (int)           : Number of epochs
         """
 
         print("---------------")

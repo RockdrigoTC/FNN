@@ -21,13 +21,14 @@ learning_rate = 0.1          # Learning rate
 optimizer = 'sgd'            # Optimizer
 
 # Crear capas
-layer_1 = Layer(input_size=input, output_size=hidden_size, activation='tanh', weight_init='he', optimizer=optimizer)
+layer_1 = Layer(input_size=input, output_size=hidden_size, activation='sigmoid', weight_init='he', optimizer=optimizer)
 layer_2 = Layer(input_size=hidden_size, output_size=output, activation='softmax', weight_init='he', optimizer=optimizer)
 
 """
-Try different hyperparameters, architectures, activation functions, weight initialization methods, etc.
+Try different Datasets, hyperparameters, activation functions, weight initialization methods, etc.
 See how they affect the model performance.
 Examples:
+    - Change the dataset: 'mnist_784', 'fashion_mnist_784', 'diabetes', etc.
     - Change the number of hidden layers and their sizes: hidden_size = 50, hidden_size = 150, hidden_size = 200, etc.
     - Change the activation functions: activation='sigmoid', activation='tanh', activation='relu' or activation='softmax'.
     - Change the weight initialization methods: weight_init='random', weight_init='he' or weight_init='glorot'.
