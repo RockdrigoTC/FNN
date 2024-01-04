@@ -14,8 +14,8 @@ output = y_train.shape[1]  # Size of output layer
 
 # Hyperparameters
 hidden_size = 100    # Size of hidden layer
-epoch = 100          # Number of epochs
-batch_size = None    # Batch size
+epoch = 10           # Number of epochs
+batch_size = 10000   # Batch size
 learning_rate = 0.1  # Learning rate
 dropout = 0.0        # Dropout rate
 patience = 0         # Patience for early stopping
