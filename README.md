@@ -49,7 +49,7 @@ In this module, you can train the FNN on the dataset you want. You can also chan
 3. Run the train.py script to train the FNN on the MNIST dataset:
 
    ```bash
-   python data.py
+   python train.py
 
 (Optional) Install matplotlib to display training statistics plots
 
